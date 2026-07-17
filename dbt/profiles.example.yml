@@ -1,0 +1,8 @@
+# Copy to ~/.dbt/profiles.yml (or set DBT_PROFILES_DIR=dbt/).
+# dbt-duckdb reads the Parquet lake directly - no load step.
+edgar:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../data/edgar.duckdb

@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: stg_form4_transactions
+    description: >
+      Form 4 transaction grain with 4/A amendments superseding originals.
+    columns:
+      - name: accession_number
+        tests: [not_null]
+      - name: issuer_cik
+        tests: [not_null]
+      - name: transaction_date
+        tests: [not_null]
+      - name: acquired_disposed
+        tests:
+          - accepted_values:
+              values: ["A", "D"]
+  - name: fct_insider_flows
+    description: Daily net open-market insider flow per issuer.
+    columns:
+      - name: issuer_cik
+        tests: [not_null]
+      - name: net_flow
+        tests: [not_null]

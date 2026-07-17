@@ -1,0 +1,38 @@
+[project]
+name = "edgar-pipeline"
+version = "0.1.0"
+description = "Incremental SEC EDGAR Form 4 (insider transactions) pipeline: daily index -> XML parse -> Parquet -> DuckDB/dbt"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "pydantic>=2.7",
+    "pyarrow>=16.0",
+    "duckdb>=1.0",
+    "dagster>=1.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+    "dagster-webserver>=1.7",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/edgar_pipeline"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

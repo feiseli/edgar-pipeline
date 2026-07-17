@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+data/
+dist/
+.pytest_cache/
+.ruff_cache/
+dbt/target/
+dbt/logs/
+*.duckdb
+.env
+tmp*/
+.dagster/

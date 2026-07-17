@@ -1,0 +1,16 @@
+Description:           Daily Index of EDGAR Dissemination Feed by Form Type
+Last Data Received:    July 15, 2026
+Comments:              webmaster@sec.gov
+Anonymous FTP:         ftp://ftp.sec.gov/edgar/
+
+
+
+
+Form Type   Company Name                                                  CIK         Date Filed  File Name
+---------------------------------------------------------------------------------------------------------------------------------------------
+10-Q        EXAMPLE MANUFACTURING CORP                                    1122334     20260715    edgar/data/1122334/0001122334-26-000012.txt
+4           DOE JANE                                                      1214156     20260715    edgar/data/320193/0000320193-26-000045.txt
+4           SMITH JOHN A                                                  1391045     20260715    edgar/data/789019/0001391045-26-000101.txt
+4/A         PENA ALEX                                                     1555001     20260715    edgar/data/1318605/0001555001-26-000007.txt
+8-K         EXAMPLE ENERGY PARTNERS LP                                    1998877     20260715    edgar/data/1998877/0001998877-26-000033.txt
+SC 13G      LARGE FUND ADVISORS LLC                                       1777222     20260715    edgar/data/1045810/0001777222-26-000210.txt
