@@ -1,0 +1,13 @@
+Description:           Daily Index of EDGAR Dissemination Feed by Form Type
+Last Data Received:    Jul 16, 2026
+Comments:              webmaster@sec.gov
+Anonymous FTP:         ftp://ftp.sec.gov/edgar/
+
+
+Form Type   Company Name                                                  CIK
+      Date Filed  File Name
+---------------------------------------------------------------------------------------------------------------------------------------------
+1-A POS          Bequest Bonds I Inc                                           2016678     20260716    edgar/data/2016678/0001213900-26-078683.txt
+4                DOE JANE                                                      1214156     20260716    edgar/data/320193/0000320193-26-000045.txt
+4/A              TRUST FUND 2020                                               1555001     20260716    edgar/data/1318605/0001555001-26-000007.txt
+10-K             EXAMPLE HOLDINGS 99 CORP                                      1998877     20260716    edgar/data/1998877/0001998877-26-000033.txt

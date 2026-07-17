@@ -40,16 +40,18 @@ def main() -> None:
     print(f"wrote {len(rows)} transactions ({skipped} filings skipped) -> {path}")
 
     con = connect()
-    print(
-        con.execute(
-            """
-            SELECT transaction_code, count(*) AS n,
-                   round(sum(shares * price_per_share)) AS gross_value
-            FROM form4_transactions
-            GROUP BY 1 ORDER BY n DESC
-            """
-        ).fetchdf()
-    )
+    rows = con.execute(
+        """
+        SELECT transaction_code, count(*) AS n,
+               round(sum(shares * price_per_share)) AS gross_value
+        FROM form4_transactions
+        GROUP BY 1 ORDER BY n DESC
+        """
+    ).fetchall()
+    print(f"{'code':<6}{'txns':>8}{'gross_value':>16}")
+    for code, n, gross in rows:
+        gross_s = f"{gross:,.0f}" if gross is not None else "-"
+        print(f"{code:<6}{n:>8}{gross_s:>16}")
 
 
 if __name__ == "__main__":

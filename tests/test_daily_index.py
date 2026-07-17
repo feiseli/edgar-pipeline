@@ -31,6 +31,20 @@ def test_parse_form_index_fields():
     assert entry.filing_dir_url == "/Archives/edgar/data/320193/000032019326000045"
 
 
+def test_parse_2026_wrapped_header_format():
+    """Current EDGAR files wrap the header across two lines; the row-anchored
+    parser must not care. Fixture replicates a real 2026-07-16 index."""
+    text = (Path(__file__).parent / "fixtures" / "form_index_2026_wrapped_header.idx").read_text()
+    entries = parse_form_index(text)
+    assert [e.form_type for e in entries] == ["1-A POS", "4", "4/A", "10-K"]
+    # Company name ending in digits must not bleed into the CIK match
+    trust = next(e for e in entries if e.form_type == "4/A")
+    assert trust.company_name == "TRUST FUND 2020"
+    assert trust.cik == 1555001
+    assert trust.date_filed == dt.date(2026, 7, 16)
+    assert trust.accession_number == "0001555001-26-000007"
+
+
 def test_form_type_filter_matches_config():
     entries = [e for e in parse_form_index(FIXTURE) if e.form_type in FORM_TYPES]
     assert len(entries) == 3

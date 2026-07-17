@@ -1,7 +1,10 @@
 .PHONY: setup test lint smoke dev
 
+# Bare `python` does not exist on stock macOS; override with PYTHON=... if needed
+PYTHON ?= python3
+
 setup:
-	python -m venv .venv && .venv/bin/pip install -e ".[dev]"
+	$(PYTHON) -m venv .venv && .venv/bin/pip install -e ".[dev]"
 
 test:
 	pytest

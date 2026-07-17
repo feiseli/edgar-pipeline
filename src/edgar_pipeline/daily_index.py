@@ -1,15 +1,26 @@
 """Fetch and parse EDGAR daily form indexes.
 
 EDGAR publishes one form index per business day at
-/Archives/edgar/daily-index/{year}/QTR{q}/form.{YYYYMMDD}.idx — a header
-followed by a dashed separator line and fixed-width columns. Column widths
-drift across vintages, so instead of hardcoding offsets we derive them from
-the header row's label positions.
+/Archives/edgar/daily-index/{year}/QTR{q}/form.{YYYYMMDD}.idx — a preamble,
+a header, a dashed separator, then one fixed-width-ish row per filing.
+
+We deliberately do NOT parse via header column offsets: in current EDGAR
+files the header labels wrap across two physical lines, so header-derived
+offsets are unreliable. Instead each data row is matched by its own rigid
+structure, anchored from the right:
+
+    <form type>  <company name>  <CIK digits>  <YYYYMMDD>  edgar/data/...
+
+Form types and company names may contain single internal spaces; the row
+regex requires 2+ spaces between form type and company (guaranteed by the
+fixed-width form-type column) and anchors CIK/date/file-name so trailing
+digits in company names can't misalign the match.
 """
 
 from __future__ import annotations
 
 import datetime as dt
+import re
 
 import httpx
 
@@ -17,7 +28,15 @@ from .config import EDGAR_BASE, FORM_TYPES
 from .http import EdgarClient
 from .models import IndexEntry
 
-_COLUMNS = ["Form Type", "Company Name", "CIK", "Date Filed", "File Name"]
+ROW_RE = re.compile(
+    r"^(?P<form>\S+(?: \S+)*)"  # form type: tokens split by single spaces
+    r"\s{2,}"
+    r"(?P<company>\S.*?)"  # company name, non-greedy
+    r"\s+(?P<cik>\d+)"
+    r"\s+(?P<date>\d{8})"
+    r"\s+(?P<file>edgar/\S+)"
+    r"\s*$"
+)
 
 
 def daily_index_url(date: dt.date) -> str:
@@ -28,32 +47,31 @@ def daily_index_url(date: dt.date) -> str:
 
 
 def parse_form_index(text: str) -> list[IndexEntry]:
-    lines = text.splitlines()
-    header_i = next((i for i, line in enumerate(lines) if all(c in line for c in _COLUMNS)), None)
-    if header_i is None:
-        raise ValueError("no header row found in form index")
-
-    header = lines[header_i]
-    starts = [header.index(c) for c in _COLUMNS]
-    bounds = list(zip(starts, starts[1:] + [None], strict=True))
+    if "<html" in text[:500].lower():
+        raise ValueError(
+            "EDGAR returned an HTML page instead of an index file — usually a "
+            "bot-challenge/block page. Check that EDGAR_USER_AGENT identifies "
+            f"you per SEC guidelines. Response starts:\n{text[:300]}"
+        )
 
     entries: list[IndexEntry] = []
-    for line in lines[header_i + 1 :]:
-        if not line.strip() or set(line.strip()) == {"-"}:
-            continue
-        fields = [line[a:b].strip() for a, b in bounds]
-        form_type, company, cik, date_filed, file_name = fields
-        if not cik.isdigit():
-            continue  # malformed row; EDGAR indexes occasionally contain them
+    for line in text.splitlines():
+        m = ROW_RE.match(line)
+        if m is None:
+            continue  # preamble, header, separator, blank lines
         entries.append(
             IndexEntry(
-                form_type=form_type,
-                company_name=company,
-                cik=int(cik),
-                date_filed=dt.datetime.strptime(date_filed, "%Y%m%d").date(),
-                file_name=file_name,
+                form_type=m["form"],
+                company_name=m["company"].strip(),
+                cik=int(m["cik"]),
+                date_filed=dt.datetime.strptime(m["date"], "%Y%m%d").date(),
+                file_name=m["file"],
             )
         )
+
+    if not entries and text.strip():
+        preview = "\n".join(line for line in text.splitlines() if line.strip())[:600]
+        raise ValueError(f"no parseable rows in form index. File starts:\n{preview}")
     return entries
 
 
