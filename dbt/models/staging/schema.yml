@@ -14,11 +14,19 @@ models:
       - name: acquired_disposed
         tests:
           - accepted_values:
-              values: ["A", "D"]
+              arguments:
+                values: ["A", "D"]
   - name: fct_insider_flows
     description: Daily net open-market insider flow per issuer.
     columns:
       - name: issuer_cik
         tests: [not_null]
       - name: net_flow
+        tests: [not_null]
+  - name: fct_owner_transactions
+    description: Owner-level transaction detail per issuer, amendments resolved.
+    columns:
+      - name: issuer_cik
+        tests: [not_null]
+      - name: owner_cik
         tests: [not_null]

@@ -31,6 +31,24 @@ def test_write_and_query_roundtrip(tmp_path, monkeypatch):
     assert n2 == 2
 
 
+def test_form4_parquet_asset_accepts_flattened_rows(tmp_path, monkeypatch):
+    # Regression: the asset once assumed upstream rows carried ISO date strings,
+    # but the pickle IO manager delivers dt.date objects — flatten() output as-is.
+    from dagster import build_asset_context
+
+    import edgar_pipeline.config as config
+    import edgar_pipeline.storage as storage
+    from edgar_pipeline.definitions import form4_parquet
+
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(storage, "DATA_DIR", tmp_path)
+
+    rows = parse_form4(XML, "0000320193-26-000045").flatten()
+    ctx = build_asset_context(partition_key="2026-07-15")
+    path = form4_parquet(ctx, rows)
+    assert Path(path).exists()
+
+
 def test_empty_partition_ok(tmp_path, monkeypatch):
     import edgar_pipeline.config as config
     import edgar_pipeline.storage as storage

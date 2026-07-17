@@ -1,4 +1,4 @@
-.PHONY: setup test lint smoke dev
+.PHONY: setup test lint smoke dev dbt
 
 # Bare `python` does not exist on stock macOS; override with PYTHON=... if needed
 PYTHON ?= python3
@@ -21,3 +21,7 @@ smoke:
 # Local Dagster UI at http://localhost:3000
 dev:
 	dagster dev -m edgar_pipeline.definitions
+
+# Build dbt models + tests against the Parquet lake (paths are relative to dbt/)
+dbt:
+	cd dbt && dbt build --profiles-dir .

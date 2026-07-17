@@ -17,6 +17,7 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.5",
     "dagster-webserver>=1.7",
+    "dbt-duckdb>=1.8",
 ]
 
 [build-system]

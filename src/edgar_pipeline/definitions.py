@@ -30,7 +30,7 @@ from .http import EdgarClient
 from .models import IndexEntry
 from .storage import write_partition
 
-daily = DailyPartitionsDefinition(start_date="2026-07-01", timezone="US/Eastern")
+daily = DailyPartitionsDefinition(start_date="2026-06-22", timezone="US/Eastern")
 
 
 @asset(partitions_def=daily)
@@ -63,17 +63,10 @@ def form4_records(context: AssetExecutionContext, form4_index_entries: list[dict
 def form4_parquet(context: AssetExecutionContext, form4_records: list[dict]) -> str:
     """One Parquet file per filed-date partition; re-runs overwrite atomically."""
     date = dt.date.fromisoformat(context.partition_key)
-    # Upstream asset serialized dates to ISO strings; restore them for Arrow.
-    typed = [
-        {
-            **row,
-            "period_of_report": dt.date.fromisoformat(row["period_of_report"]),
-            "transaction_date": dt.date.fromisoformat(row["transaction_date"]),
-        }
-        for row in form4_records
-    ]
-    path = write_partition(typed, date)
-    context.add_output_metadata({"path": str(path), "rows": len(typed)})
+    # Rows arrive via the pickle IO manager with dt.date values intact —
+    # exactly what write_partition's Arrow schema expects. No conversion.
+    path = write_partition(form4_records, date)
+    context.add_output_metadata({"path": str(path), "rows": len(form4_records)})
     return str(path)
 
 
