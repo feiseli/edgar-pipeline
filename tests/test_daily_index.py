@@ -49,3 +49,23 @@ def test_form_type_filter_matches_config():
     entries = [e for e in parse_form_index(FIXTURE) if e.form_type in FORM_TYPES]
     assert len(entries) == 3
     assert all(e.form_type in {"4", "4/A"} for e in entries)
+
+
+def test_missing_index_is_empty_day():
+    # EDGAR serves 403 (observed live, 2026-07-03 holiday) or 404 for
+    # nonexistent index files; both mean "no filings", not an error.
+    import httpx
+
+    from edgar_pipeline.daily_index import fetch_form4_entries
+
+    class StubClient:
+        def __init__(self, status):
+            self.status = status
+
+        def get(self, url):
+            req = httpx.Request("GET", url)
+            resp = httpx.Response(self.status, request=req)
+            raise httpx.HTTPStatusError("nope", request=req, response=resp)
+
+    for status in (403, 404):
+        assert fetch_form4_entries(StubClient(status), dt.date(2026, 7, 3)) == []

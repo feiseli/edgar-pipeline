@@ -69,3 +69,30 @@ def test_find_ownership_xml_prefers_agent_file():
         "primary_doc.xml"
     )
     assert find_ownership_xml({"directory": {"item": [{"name": "a.htm"}]}}) is None
+
+
+def test_fetch_form4_empty_body_is_skip():
+    # Observed live 2026-07-08: a filing's XML fetch returned an empty body;
+    # ET.ParseError (a SyntaxError, not ValueError) must count as a skip.
+    from edgar_pipeline.form4 import fetch_form4
+    from edgar_pipeline.models import IndexEntry
+
+    class StubResponse:
+        content = b""
+
+        @staticmethod
+        def json():
+            return {"directory": {"item": [{"name": "form4.xml"}]}}
+
+    class StubClient:
+        def get(self, url):
+            return StubResponse()
+
+    entry = IndexEntry(
+        form_type="4",
+        company_name="DOE JANE",
+        cik=1214156,
+        date_filed=dt.date(2026, 7, 8),
+        file_name="edgar/data/320193/0000320193-26-000045.txt",
+    )
+    assert fetch_form4(StubClient(), entry) is None

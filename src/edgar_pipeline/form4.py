@@ -128,5 +128,7 @@ def fetch_form4(client: EdgarClient, entry: IndexEntry) -> Form4Filing | None:
     xml_bytes = client.get(f"{dir_url}/{name}").content
     try:
         return parse_form4(xml_bytes, entry.accession_number)
-    except ValueError:
+    except (ValueError, ET.ParseError):
+        # ParseError is a SyntaxError, not a ValueError — empty/garbage
+        # bodies (observed live 2026-07-08) must count as skips too.
         return None

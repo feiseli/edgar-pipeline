@@ -50,9 +50,12 @@ def form4_records(context: AssetExecutionContext, form4_index_entries: list[dict
     skipped = 0
     with EdgarClient() as client:
         for raw in form4_index_entries:
-            filing = fetch_form4(client, IndexEntry.model_validate(raw))
+            entry = IndexEntry.model_validate(raw)
+            filing = fetch_form4(client, entry)
             if filing is None:
                 skipped += 1
+                # Named so a drift incident can be captured as a fixture.
+                context.log.warning(f"unparseable filing skipped: {entry.accession_number}")
                 continue
             rows.extend(filing.flatten())
     context.add_output_metadata({"transactions": len(rows), "unparseable_filings": skipped})

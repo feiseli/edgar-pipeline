@@ -76,12 +76,15 @@ def parse_form_index(text: str) -> list[IndexEntry]:
 
 
 def fetch_form4_entries(client: EdgarClient, date: dt.date) -> list[IndexEntry]:
-    """Form 4 / 4-A index entries for one day. Empty on weekends/holidays
-    (EDGAR returns 404 for days with no index)."""
+    """Form 4 / 4-A index entries for one day. Empty on weekends/holidays.
+
+    EDGAR serves 403 (observed live on the 2026-07-03 holiday), not 404,
+    for index files that don't exist; accept both as "no filings that day".
+    """
     try:
         resp = client.get(daily_index_url(date))
     except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
+        if e.response.status_code in (403, 404):
             return []
         raise
     return [e for e in parse_form_index(resp.text) if e.form_type in FORM_TYPES]
