@@ -58,9 +58,19 @@ Expect the lake to hold ~40–50% of daily index *rows*. Two structural reasons,
 - **Nightly rebuild is a second Dagster schedule** (`dashboard_nightly`, 23:30 ET): dbt + Evidence build + healthchecks.io ping on success — one orchestrator, and the ping covers the whole chain. Verified end-to-end in the local compose stack: job green in-container, Caddy served the site and status.json over HTTPS.
 - **Backups**: `deploy/backup.sh` (tar lake + dagster home → B2 via rclone, rolling 35 days) with the cron line in its header.
 
+## Done: deployed to VPS (2026-07-19)
+
+- Hetzner CX22 (`167.233.216.161`, Debian 12), non-root `eli` user, password auth off, unattended-upgrades. Laptop `~/.ssh/config` has `Host edgar`.
+- Live at **https://edgar.edgartracker.xyz** (Porkbun domain; Caddy auto-HTTPS working). `status.json` served; badge added to README (uncommitted).
+- Lake seeded by rsync (20 partitions, status.json byte-identical), repo at `15d94ed` in `/opt/edgar-pipeline`.
+- Both schedules RUNNING (enabled via `dagster schedule start` CLI — UI not needed): 22:30 ET ingest, 23:30 ET dashboard.
+- healthchecks.io wired (`hc-ping.com/fbab85c3-...`); first successful `dashboard_nightly` run pinged it.
+- Backups proven end-to-end: rclone remote `b2` → bucket `edgar-pipeline-backups`, cron `15 5 * * 2-6` under `eli`, first tarball uploaded, **restore rehearsed** (pulled from B2, 20 parquet files, status.json identical) — scope's restore-rehearsal item done.
+- **Incident**: first `dashboard_nightly` run OOM-locked the box — Evidence's node build peaked ~2.6GB RSS on the 4GB CX22 (no swap by default on Hetzner); SSH froze until the OOM killer got node. Fix: 2GB swapfile (persistent via fstab). Rerun succeeded in 1m15s. If builds grow, next lever is `NODE_OPTIONS=--max-old-space-size` or a compose mem limit.
+
 ## Next steps (in order)
 
-1. **Provision and deploy** — the manual checklist is `deploy/README.md`: Hetzner VPS, DNS, `.env`, healthchecks.io check, B2 bucket + rclone, `rsync` the lake up, `docker compose up -d --build`, enable both schedules in the UI, add the badge to the README. Then the five-business-day unattended soak (scope acceptance).
+1. **Five-business-day unattended soak** (scope acceptance) — starts Mon 2026-07-20. Watch: badge date advances daily, healthchecks stays green, `docker compose ps` clean. Also kill the daemon once mid-week to confirm healthchecks alerts (acceptance item).
 2. **README framing** (per Eli's stated goal): present storage decisions as choices with rejected alternatives — Parquet-on-disk + DuckDB vs Postgres, when object-storage-primary/Iceberg would win, immutable raw + dbt-layer amendment resolution, atomic partition overwrites. Object-storage-primary was explicitly considered and declined; don't reopen it. The filer-error guard (aggregate-in-price-field pattern) is a good README data-quality story.
 3. **Frontend sharpening** during the soak week.
 

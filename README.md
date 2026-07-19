@@ -1,5 +1,7 @@
 # edgar-pipeline
 
+![data through](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fedgar.edgartracker.xyz%2Fstatus.json&query=%24.partition&label=data%20through&color=blue) [**Live dashboard →**](https://edgar.edgartracker.xyz)
+
 Incremental pipeline over SEC EDGAR Form 4 filings (insider transactions): daily index discovery → ownership-XML parsing → partitioned Parquet → DuckDB + dbt models, orchestrated with Dagster.
 
 ```mermaid
