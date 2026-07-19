@@ -58,7 +58,7 @@ order by coalesce(bought, 0) + coalesce(sold, 0) desc
 ```sql history
 select
     transaction_date,
-    any_value(issuer_symbol) as symbol,
+    issuer_symbol as symbol,
     transaction_code,
     acquired_disposed,
     shares,
@@ -70,7 +70,6 @@ select
         || accession_number || '-index.htm' as filing
 from edgar.owner_transactions
 where owner_cik = ${params.owner_cik}
-group by all
 order by transaction_date desc
 ```
 
