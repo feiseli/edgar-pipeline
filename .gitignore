@@ -15,3 +15,4 @@ tmp*/
 dbt/profiles.yml
 dbt/.user.yml
 .tmp_dagster_home_*/
+.superpowers/
