@@ -9,9 +9,16 @@
 		file_server
 	}
 
-	# The prerendered Evidence site.
+	# The prerendered Evidence site. Hashed assets cache forever; everything
+	# else (HTML, manifest.json, service worker) revalidates every load —
+	# without this, browsers heuristically cache the manifest and serve a
+	# stale schema after deploys.
 	handle {
 		root * /srv/site
+		@hashed path /_app/immutable/* /data/edgar/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		@mutable not path /_app/immutable/* /data/edgar/*
+		header @mutable Cache-Control "no-cache"
 		file_server
 	}
 }
