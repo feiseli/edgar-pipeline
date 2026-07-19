@@ -68,6 +68,15 @@ Expect the lake to hold ~40–50% of daily index *rows*. Two structural reasons,
 - Backups proven end-to-end: rclone remote `b2` → bucket `edgar-pipeline-backups`, cron `15 5 * * 2-6` under `eli`, first tarball uploaded, **restore rehearsed** (pulled from B2, 20 parquet files, status.json identical) — scope's restore-rehearsal item done.
 - **Incident**: first `dashboard_nightly` run OOM-locked the box — Evidence's node build peaked ~2.6GB RSS on the 4GB CX22 (no swap by default on Hetzner); SSH froze until the OOM killer got node. Fix: 2GB swapfile (persistent via fstab). Rerun succeeded in 1m15s. If builds grow, next lever is `NODE_OPTIONS=--max-old-space-size` or a compose mem limit.
 
+## Done: frontend sharpening shipped (2026-07-19, evening)
+
+- Spec + plan in `docs/superpowers/` (brainstormed, 6 tasks, per-task + whole-branch reviewed). Live on the VPS.
+- Terminal theme (dark-only, monospace numerals, uppercase headings) via config + per-page style blocks — deliberately duplicated byte-identical across 4 pages (Evidence 40 has no global-CSS hook; human-approved). BigValue selector is markup-pinned (`div.text-xl.font-medium`) — recheck after any Evidence upgrade.
+- New: `is_first_buy` dbt flag (invariant-tested incl. same-day ties), overview status line + notable-trades feed, `/owners/<cik>` track-record pages, EDGAR/Yahoo links, per-page explainers, cluster first-buy counts, favicon, empty states.
+- **Recorded exemption**: Evidence delta chips keep green/red (▲/▼ + sign are non-color channels); the blue/orange rule targets color-only chart encodings. In spec.
+- **Static-crawl caveat (not a bug)**: only link-discovered pages prerender (61 issuers, 317 owners). All in-site links work; hand-typed URLs for unlinked CIKs 404. An all-issuers index page would make the crawl exhaustive if ever wanted.
+- Verification at merge: pytest 15, dbt 15/15 (was 12; +3 first-buy tests), `npm run build` green, live-site parquet confirmed to carry `is_first_buy`. Stale-browser-cache binder errors after deploys clear with a hard refresh.
+
 ## Next steps (in order)
 
 1. **Five-business-day unattended soak** (scope acceptance) — starts Mon 2026-07-20. Watch: badge date advances daily, healthchecks stays green, `docker compose ps` clean. Also kill the daemon once mid-week to confirm healthchecks alerts (acceptance item).
