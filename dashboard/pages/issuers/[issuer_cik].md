@@ -1,12 +1,17 @@
 ```sql issuer_info
 select
     any_value(issuer_name)   as issuer_name,
-    any_value(issuer_symbol) as issuer_symbol
+    any_value(issuer_symbol) as issuer_symbol,
+    'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK='
+        || any_value(issuer_cik)::bigint || '&type=4' as edgar_issuer,
+    'https://finance.yahoo.com/quote/' || any_value(issuer_symbol) as yahoo
 from edgar.owner_transactions
 where issuer_cik = ${params.issuer_cik}
 ```
 
 # <Value data={issuer_info} column=issuer_name/> (<Value data={issuer_info} column=issuer_symbol/>)
+
+<a href={issuer_info[0]?.edgar_issuer} target="_blank" rel="noopener">Form 4 filings on EDGAR →</a> · <a href={issuer_info[0]?.yahoo} target="_blank" rel="noopener">Yahoo Finance →</a>
 
 ```sql open_market
 select transaction_date, sum(signed_value) as net
@@ -42,14 +47,15 @@ select
     any_value(owner_role) as role,
     sum(case when transaction_code = 'P' then gross_value end) as bought,
     sum(case when transaction_code = 'S' then gross_value end) as sold,
-    max(transaction_date) as last_activity
+    max(transaction_date) as last_activity,
+    '/owners/' || owner_cik::bigint as owner_link
 from edgar.owner_transactions
 where issuer_cik = ${params.issuer_cik}
 group by owner_cik
 order by coalesce(bought, 0) + coalesce(sold, 0) desc
 ```
 
-<DataTable data={owners}>
+<DataTable data={owners} link=owner_link>
     <Column id=owner/>
     <Column id=role/>
     <Column id=bought fmt='$#,##0.0,,"M"'/>
