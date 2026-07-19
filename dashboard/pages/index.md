@@ -2,14 +2,42 @@
 title: Insider Flow
 ---
 
-Open-market insider transactions reported to the SEC on Form 4. **Buys and sells
-here are codes P and S only** — actual purchases and sales at market, the
-transactions where an insider put money at stake. Grants, option exercises, and
-gifts are excluded. Value is shares × reported price.
+Open-market insider transactions reported to the SEC on Form 4.
+
+<Details title="What am I looking at?">
+
+Corporate insiders — officers, directors, 10% owners — must report their
+trades to the SEC on Form 4 within two business days. This dashboard tracks
+**open-market buys and sells only** (transaction codes P and S): actual
+purchases and sales at market price, where an insider put their own money at
+stake. Grants, option exercises, gifts, and tax withholdings are excluded —
+they carry no price-sensitive signal.
+
+Value is shares × reported price. Data starts 2026-06-22 and updates each
+business day. Rows with implausible filer-entered values (e.g. aggregate
+proceeds typed into the per-share price field) are excluded by an automated
+guard.
+
+</Details>
 
 ```sql anchor
 select max(transaction_date)::date as max_date from edgar.insider_flows
 ```
+
+```sql lake_status
+select
+    (select max(transaction_date)::date from edgar.owner_transactions) as through_date,
+    count(*) as rows_total,
+    count(distinct issuer_cik) as issuers_total
+from edgar.owner_transactions
+```
+
+<p class="status-line">
+  DATA THROUGH <Value data={lake_status} column=through_date/> ·
+  <Value data={lake_status} column=rows_total fmt='#,##0'/> ROWS ·
+  <Value data={lake_status} column=issuers_total fmt='#,##0'/> ISSUERS ·
+  UPDATED EACH BUSINESS DAY FROM SEC EDGAR
+</p>
 
 ```sql kpis
 select
@@ -50,6 +78,43 @@ order by transaction_date
     yFmt='$#,##0,,"M"'
     title="Open-market transaction value per day"
 />
+
+## Notable trades
+
+Largest individual open-market trades reported in the trailing 7 days.
+"First buy" marks an insider's first purchase of that issuer in this dataset
+(which starts 2026-06-22) — not necessarily their first ever.
+
+```sql notable
+select
+    transaction_code as code,
+    any_value(issuer_symbol) as symbol,
+    owner_name,
+    transaction_date,
+    sum(gross_value) as value,
+    max(case when is_first_buy then 'FIRST BUY' else '' end) as flag,
+    '/issuers/' || issuer_cik::bigint as issuer_link,
+    '/owners/'  || owner_cik::bigint  as owner_link,
+    'https://www.sec.gov/Archives/edgar/data/' || issuer_cik::bigint || '/'
+        || replace(accession_number, '-', '') || '/'
+        || accession_number || '-index.htm' as filing
+from edgar.owner_transactions
+where transaction_code in ('P', 'S')
+  and transaction_date > (select max_date from ${anchor}) - 7
+group by accession_number, transaction_code, issuer_cik, owner_cik, owner_name, transaction_date
+order by value desc
+limit 10
+```
+
+<DataTable data={notable} link=issuer_link>
+    <Column id=code align=center/>
+    <Column id=symbol/>
+    <Column id=owner_link contentType=link linkLabel=owner_name title="Owner"/>
+    <Column id=transaction_date/>
+    <Column id=value fmt='$#,##0.0,,"M"'/>
+    <Column id=flag/>
+    <Column id=filing contentType=link linkLabel="EDGAR →"/>
+</DataTable>
 
 ## Net-flow leaderboard
 
@@ -137,5 +202,14 @@ Latest transaction date: <Value data={anchor} column=max_date/>.
     font-size: 0.85rem;
     letter-spacing: 0.06em;
     opacity: 0.8;
+  }
+  /* page-specific: status line (index.md only) */
+  :global(.status-line) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    opacity: 0.65;
+    border-bottom: 1px solid rgba(139, 148, 158, 0.3);
+    padding-bottom: 0.5em;
   }
 </style>
