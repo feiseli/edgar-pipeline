@@ -19,3 +19,14 @@ select owner_cik, issuer_cik, 'non_p_flagged' as violation
 from {{ ref('fct_owner_transactions') }}
 where transaction_code is distinct from 'P' and is_first_buy
 group by 1, 2
+
+union all
+
+select distinct p.owner_cik, p.issuer_cik, 'earliest_p_not_flagged' as violation
+from p
+join (
+    select owner_cik, issuer_cik, min(transaction_date) as first_p_date
+    from p
+    group by 1, 2
+) g using (owner_cik, issuer_cik)
+where p.transaction_date = g.first_p_date and not p.is_first_buy
