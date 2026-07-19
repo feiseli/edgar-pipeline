@@ -75,18 +75,32 @@ Expect the lake to hold ~40–50% of daily index *rows*. Two structural reasons,
 - New: `is_first_buy` dbt flag (invariant-tested incl. same-day ties), overview status line + notable-trades feed, `/owners/<cik>` track-record pages, EDGAR/Yahoo links, per-page explainers, cluster first-buy counts, favicon, empty states.
 - **Recorded exemption**: Evidence delta chips keep green/red (▲/▼ + sign are non-color channels); the blue/orange rule targets color-only chart encodings. In spec.
 - **Static-crawl caveat (not a bug)**: only link-discovered pages prerender (61 issuers, 317 owners). All in-site links work; hand-typed URLs for unlinked CIKs 404. An all-issuers index page would make the crawl exhaustive if ever wanted.
-- Verification at merge: pytest 15, dbt 15/15 (was 12; +3 first-buy tests), `npm run build` green, live-site parquet confirmed to carry `is_first_buy`. Stale-browser-cache binder errors after deploys clear with a hard refresh.
+- Verification at merge: pytest 15, dbt 15/15 (was 12; +3 first-buy tests), `npm run build` green, live-site parquet confirmed to carry `is_first_buy`.
+
+### Post-deploy incident: stale-schema binder errors (fixed at the server)
+
+Eli's browser kept showing `Binder Error: is_first_buy not found` after the deploy —
+survived hard refresh AND DevTools "Clear site data" (Chrome doesn't reliably purge
+the HTTP disk cache there); incognito was clean. Root cause: Caddy sent **no
+Cache-Control headers**, so browsers heuristically cached `data/manifest.json` and
+served a pre-deploy schema against post-deploy queries. Fix (deployed): Caddyfile
+now sends `no-cache` for everything except `/_app/immutable/*` and `/data/edgar/*`
+(content-hashed → `immutable, max-age=1y`). Future schema-changing deploys are safe
+for all visitors. If a locally poisoned cache ever recurs: DevTools open →
+long-press reload → "Empty Cache and Hard Reload" is the only reliable purge.
 
 ## Next steps (in order)
 
 1. **Five-business-day unattended soak** (scope acceptance) — starts Mon 2026-07-20. Watch: badge date advances daily, healthchecks stays green, `docker compose ps` clean. Also kill the daemon once mid-week to confirm healthchecks alerts (acceptance item).
-2. **README framing** (per Eli's stated goal): present storage decisions as choices with rejected alternatives — Parquet-on-disk + DuckDB vs Postgres, when object-storage-primary/Iceberg would win, immutable raw + dbt-layer amendment resolution, atomic partition overwrites. Object-storage-primary was explicitly considered and declined; don't reopen it. The filer-error guard (aggregate-in-price-field pattern) is a good README data-quality story.
-3. **Frontend sharpening** during the soak week.
+2. **Human visual pass** (never done — no browser access from the CLI session): live site on desktop + ~390px mobile; confirm terminal theme, monospace BigValues, favicon in tab, delta chips acceptable, tables scroll not overflow. Eli started clicking around 07-19 evening; nothing flagged beyond the (fixed) cache issue.
+3. **README framing** (per Eli's stated goal): present storage decisions as choices with rejected alternatives — Parquet-on-disk + DuckDB vs Postgres, when object-storage-primary/Iceberg would win, immutable raw + dbt-layer amendment resolution, atomic partition overwrites. Object-storage-primary was explicitly considered and declined; don't reopen it. The filer-error guard (aggregate-in-price-field pattern) is a good README data-quality story. The cache-header incident + frontend build-out are also good stories.
+4. **Optional, parked**: all-issuers index page (makes the static crawl exhaustive — currently 61 issuers/317 owners, only link-discovered pages prerender); custom Svelte components (tabled by Eli — revisit only if the theme reads too cliché); site-volume cruft from old hashed parquet dirs accumulates per deploy (harmless, worth a cleanup step in the nightly job someday).
 
 ## Verification commands
 
 ```bash
 PYTHONPATH=src .venv/bin/pytest          # 15 tests
-PATH="$PWD/.venv/bin:$PATH" make dbt     # 12 dbt objects green
-.venv/bin/python -c "import duckdb; print(duckdb.sql(\"select count(*) from read_parquet('data/form4/*/*.parquet', hive_partitioning=true)\").fetchone())"  # 40625
+PATH="$PWD/.venv/bin:$PATH" make dbt     # 15 dbt objects green
+.venv/bin/python -c "import duckdb; print(duckdb.sql(\"select count(*) from read_parquet('data/form4/*/*.parquet', hive_partitioning=true)\").fetchone())"  # 40625 (through 2026-07-17; grows nightly once soak starts)
+curl -s https://edgar.edgartracker.xyz/status.json   # freshness endpoint
 ```
