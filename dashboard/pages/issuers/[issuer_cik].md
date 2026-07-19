@@ -35,6 +35,8 @@ order by transaction_date
 
 Cumulative buys minus sells across all reported open-market transactions.
 
+{#if running_flow.length !== 0}
+
 <LineChart
     data={running_flow}
     x=transaction_date
@@ -42,6 +44,12 @@ Cumulative buys minus sells across all reported open-market transactions.
     yFmt='$#,##0.0,,"M"'
     title="Cumulative net insider flow"
 />
+
+{:else}
+
+No open-market (P/S) transactions recorded for this issuer in the dataset window.
+
+{/if}
 
 ## Owners
 
