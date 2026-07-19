@@ -1,6 +1,6 @@
 appearance:
-  default: system
-  switcher: true
+  default: dark
+  switcher: false
 
 theme:
   colorPalettes:
@@ -42,7 +42,7 @@ theme:
       dark: "#fdba74"
     base:
       light: "#ffffff"
-      dark: "#09090b"
+      dark: "#0d1117"
     info:
       light: "#0284c7"
       dark: "#38bdf8"

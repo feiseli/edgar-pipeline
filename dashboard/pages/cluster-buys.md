@@ -48,3 +48,25 @@ order by total_bought desc, buyers desc
 No cluster buys in this window — widen it.
 
 {/if}
+
+<!-- terminal-theme block: keep identical across all pages -->
+<style>
+  :global(main table),
+  :global(main .markdown table),
+  :global(main [class*="bigvalue"]),
+  :global(main [class*="big-value"]) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  :global(main h2) {
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+  }
+  :global(main h3) {
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    opacity: 0.8;
+  }
+</style>
