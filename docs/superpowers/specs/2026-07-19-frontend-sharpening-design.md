@@ -21,6 +21,11 @@ then analytics, then explainers, then fit-and-finish.
 - **Color encoding: buys = blue, sells = orange, everywhere.** Carries forward
   the Phase A colorblind-safe convention; green/red terminal cliché
   deliberately rejected. Dark-only, no light mode.
+  - *Recorded exemption (2026-07-19, final review):* Evidence `contentType=delta`
+    chips (overview leaderboards, owner net-position table) keep their
+    green/red — the ▲/▼ arrow and signed number are redundant non-color
+    channels, so the CVD rationale doesn't apply. The ban targets color-only
+    encodings (chart series).
 - No new ingestion. Every feature below is computable from existing marts.
 
 ## Features
