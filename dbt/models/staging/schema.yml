@@ -30,3 +30,8 @@ models:
         tests: [not_null]
       - name: owner_cik
         tests: [not_null]
+      - name: is_first_buy
+        description: >
+          True iff this is a code-P transaction on the owner's earliest P date
+          for this issuer within the lake (starts 2026-06-22). Not "first ever".
+        tests: [not_null]

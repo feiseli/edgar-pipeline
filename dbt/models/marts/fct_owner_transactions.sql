@@ -27,6 +27,12 @@ select
         when transaction_code = 'P' then shares * price_per_share
         when transaction_code = 'S' then -(shares * price_per_share)
     end as signed_value,
+    coalesce(
+        transaction_code = 'P'
+        and transaction_date = min(case when transaction_code = 'P' then transaction_date end)
+                over (partition by owner_cik, issuer_cik),
+        false
+    ) as is_first_buy,
     shares_owned_after,
     is_amendment
 from {{ ref('stg_form4_transactions') }}
