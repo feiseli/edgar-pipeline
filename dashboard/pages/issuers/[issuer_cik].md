@@ -1,3 +1,7 @@
+---
+title: Issuer detail
+---
+
 ```sql issuer_info
 select
     any_value(issuer_name)   as issuer_name,

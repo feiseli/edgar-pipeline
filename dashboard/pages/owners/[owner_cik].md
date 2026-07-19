@@ -1,3 +1,7 @@
+---
+title: Insider track record
+---
+
 ```sql owner_info
 select
     any_value(owner_name) as owner_name,
@@ -81,6 +85,12 @@ order by transaction_date desc
     <Column id=flag/>
     <Column id=filing contentType=link linkLabel="EDGAR →"/>
 </DataTable>
+
+{#if history.length === 0}
+
+No transactions recorded for this filer in the dataset window.
+
+{/if}
 
 <!-- terminal-theme block: keep identical across all pages -->
 <style>
