@@ -123,8 +123,7 @@ Latest transaction date: <Value data={anchor} column=max_date/>.
 <style>
   :global(main table),
   :global(main .markdown table),
-  :global(main [class*="bigvalue"]),
-  :global(main [class*="big-value"]) {
+  :global(main div.text-xl.font-medium) {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-variant-numeric: tabular-nums;
   }
