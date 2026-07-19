@@ -1,0 +1,4 @@
+name: edgar
+type: duckdb
+options:
+  filename: ../../../data/edgar.duckdb

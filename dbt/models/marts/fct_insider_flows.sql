@@ -18,4 +18,5 @@ select
 from {{ ref('stg_form4_transactions') }}
 where transaction_code in ('P', 'S')
   and price_per_share is not null
+  and not is_implausible
 group by issuer_cik, transaction_date

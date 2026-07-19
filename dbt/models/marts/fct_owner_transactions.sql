@@ -3,6 +3,7 @@
 -- grants, exercises, gifts carry no price-sensitive signal, so no sign).
 
 select
+    accession_number,
     issuer_cik,
     issuer_name,
     issuer_symbol,
@@ -29,3 +30,4 @@ select
     shares_owned_after,
     is_amendment
 from {{ ref('stg_form4_transactions') }}
+where not is_implausible

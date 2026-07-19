@@ -1,10 +1,21 @@
 # Handoff — edgar-pipeline
 
-*Updated 2026-07-18. Companion to `~/Desktop/Personal Projects/edgar-scope.md` (the scope doc); this file tracks where work actually stands.*
+*Updated 2026-07-19. Companion to `~/Desktop/Personal Projects/edgar-scope.md` (the scope doc); this file tracks where work actually stands.*
 
 ## Where things stand
 
-Phase A is two of four tasks done. The lake is fully backfilled and modeled; the dashboard is untouched.
+Phase A is complete. The lake is backfilled through 2026-07-17 (20 partitions), modeled, and the Evidence dashboard renders all three pages from local data.
+
+### Done: evidence dashboard (acceptance met)
+
+- Evidence app in `dashboard/` (template scaffold + duckdb source pointed at `data/edgar.duckdb`). `cd dashboard && npm run dev` for live dev; `npm run build` prerenders the static site (all issuer pages crawled from leaderboard/cluster links).
+- Three pages per scope: overview (30d KPIs, daily buy/sell chart, 30/90d net-flow leaderboards, filing volume), cluster-buy screen (2+ distinct open-market buyers, window toggle, <$100k clusters hidden), issuer detail (`/issuers/<cik>`: running net flow, owners, full history with EDGAR links).
+- Rebuild flow after new partitions: `make dbt`, then `cd dashboard && npm run sources` (dev picks it up; `npm run build` for static).
+- Buy/sell chart colors are blue/orange, not green/red — the green/red pair fails colorblind (deutan) contrast checks; palette lives in `dashboard/evidence.config.yaml`.
+
+### Done: data-quality guard found while building the dashboard
+
+Dashboard totals exposed filer-error rows: a FINS filing with $40M in **both** the shares and price fields ($1.6 quadrillion row; EDGAR has since removed the filing entirely), and a pattern of **aggregate proceeds entered in the per-share price field** (STNG: 15,000 sh at "$1,230,435" — footnote admits it's the total; MFG rows are yen amounts). Fix: `is_implausible` flag in `stg_form4_transactions` (price > $10k with 100+ shares, price > $2M, or row value > $20B — thresholds chosen from the observed distribution; every legit price in the lake is < $10k), both marts exclude flagged rows, singular dbt test `assert_no_implausible_values` guards it. 19 rows currently flagged. Raw parquet stays untouched per the immutable-raw design.
 
 ### Done: dbt wiring (acceptance met)
 
@@ -40,10 +51,9 @@ Expect the lake to hold ~40–50% of daily index *rows*. Two structural reasons,
 
 ## Next steps (in order)
 
-1. **Evidence dashboard** — the remaining bulk of Phase A. Three pages per scope §Phase A: overview (net-flow leaderboard 30/90d, buy/sell time series, filing volume), cluster-buy screen (2+ distinct open-market buyers in a window), issuer detail (history, owners, running net flow). Marts are ready: `fct_insider_flows`, `fct_owner_transactions`. Acceptance: `npm run dev` renders all three from local data; a stranger understands the overview unaided.
-2. **Keep partitions fresh** while working — materialize the previous business day each morning, or start the Dagster schedule.
-3. **Phase B (deployment)** per scope: Hetzner VPS, Docker Compose, Caddy, healthchecks.io, B2 backups, freshness badge. Before it: profile the 2 req/s throughput and set a persistent `DAGSTER_HOME`.
-4. **README framing** (per Eli's stated goal): present storage decisions as choices with rejected alternatives — Parquet-on-disk + DuckDB vs Postgres, when object-storage-primary/Iceberg would win, immutable raw + dbt-layer amendment resolution, atomic partition overwrites. Object-storage-primary was explicitly considered and declined; don't reopen it.
+1. **Keep partitions fresh** — materialize the previous business day each morning, or start the Dagster schedule. After each: `make dbt` + `cd dashboard && npm run sources`.
+2. **Phase B (deployment)** per scope: Hetzner VPS, Docker Compose, Caddy, healthchecks.io, B2 backups, freshness badge. Before it: profile the 2 req/s throughput and set a persistent `DAGSTER_HOME`. The compose build step should run `dbt build` + `npm run sources` + `npm run build` and serve `dashboard/build/` statically.
+3. **README framing** (per Eli's stated goal): present storage decisions as choices with rejected alternatives — Parquet-on-disk + DuckDB vs Postgres, when object-storage-primary/Iceberg would win, immutable raw + dbt-layer amendment resolution, atomic partition overwrites. Object-storage-primary was explicitly considered and declined; don't reopen it. The filer-error guard (aggregate-in-price-field pattern) is a good README data-quality story.
 
 ## Verification commands
 

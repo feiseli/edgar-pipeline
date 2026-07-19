@@ -24,6 +24,20 @@ ranked as (
 
 )
 
-select * exclude (recency_rank)
+select
+    * exclude (recency_rank),
+    -- Filer-error guard; marts exclude flagged rows. Observed patterns:
+    -- aggregate proceeds entered in the per-share price field (STNG
+    -- 0001969452-26-000010: 15,000 sh at "$1,230,435"), JPY amounts in a USD
+    -- field (MFG), both fields set to the dollar total (FINS, $1.6
+    -- quadrillion). Every legit price in the lake is < $10k (TDG, MKL, FICO);
+    -- the shares >= 100 clause spares small-lot BRK.A-style filings, the only
+    -- real > $10k shares. ponytail: static thresholds, no market-price check;
+    -- revisit if a legit > $10k / 100-share issuer besides BRK.A appears.
+    coalesce(
+        (price_per_share > 1e4 and shares >= 100)
+        or price_per_share > 2e6
+        or shares * price_per_share > 20e9, false)
+        as is_implausible
 from ranked
 where recency_rank = 1
