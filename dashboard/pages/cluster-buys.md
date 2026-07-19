@@ -6,19 +6,27 @@ Issuers where **two or more distinct insiders bought at market** (code P) inside
 the trailing window — the classic conviction signal. One insider buying can be
 noise; several buying at once rarely is.
 
+<Details title="What am I looking at?">
+
+A cluster is two or more distinct insiders making open-market purchases
+(code P) of the same issuer inside the window. "First buys" counts how many
+of those purchases were the buyer's first for that issuer in this dataset
+(which starts 2026-06-22). Clusters totaling under $100k are hidden as noise.
+
+</Details>
+
 <ButtonGroup name=window>
     <ButtonGroupItem valueLabel="7 days" value=7/>
     <ButtonGroupItem valueLabel="14 days" value=14 default/>
     <ButtonGroupItem valueLabel="30 days" value=30/>
 </ButtonGroup>
 
-Clusters totaling under $100k are hidden.
-
 ```sql clusters
 select
     any_value(issuer_symbol) as symbol,
     any_value(issuer_name)   as issuer,
     count(distinct owner_cik)                  as buyers,
+    count(*) filter (where is_first_buy) as first_buys,
     sum(gross_value)                           as total_bought,
     max(transaction_date)                      as latest_buy,
     array_to_string((array_agg(distinct owner_name))[1:4], ', ')
@@ -38,6 +46,7 @@ order by total_bought desc, buyers desc
     <Column id=symbol/>
     <Column id=issuer/>
     <Column id=buyers/>
+    <Column id=first_buys title="First buys"/>
     <Column id=total_bought fmt='$#,##0.0,,"M"'/>
     <Column id=latest_buy/>
     <Column id=who title="Buyers" wrap=true/>

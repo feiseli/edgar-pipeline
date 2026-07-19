@@ -65,8 +65,14 @@ order by coalesce(bought, 0) + coalesce(sold, 0) desc
 
 ## Transaction history
 
+<Details title="Reading this table">
+
 All resolved Form 4 rows, most recent first. Codes: P/S open-market buy/sell,
-A grant, M option exercise, F tax withholding, G gift.
+A grant, M option exercise, F tax withholding, G gift. Amended filings (4/A)
+supersede their originals. FIRST BUY marks an owner's first open-market
+purchase of this issuer in this dataset (which starts 2026-06-22).
+
+</Details>
 
 ```sql history
 select
@@ -77,6 +83,7 @@ select
     shares,
     price_per_share,
     gross_value,
+    case when is_first_buy then 'FIRST BUY' else '' end as flag,
     'https://www.sec.gov/Archives/edgar/data/' || issuer_cik::bigint || '/'
         || replace(accession_number, '-', '') || '/'
         || accession_number || '-index.htm' as filing
@@ -93,6 +100,7 @@ order by transaction_date desc, owner_name
     <Column id=shares fmt='#,##0'/>
     <Column id=price_per_share fmt='$#,##0.00'/>
     <Column id=gross_value fmt='$#,##0'/>
+    <Column id=flag/>
     <Column id=filing contentType=link linkLabel="EDGAR →"/>
 </DataTable>
 
