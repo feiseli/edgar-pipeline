@@ -10,7 +10,8 @@ dbt/logs/
 *.duckdb
 .env
 tmp*/
-.dagster/
+.dagster/*
+!.dagster/dagster.yaml
 dbt/profiles.yml
 dbt/.user.yml
 .tmp_dagster_home_*/

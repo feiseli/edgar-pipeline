@@ -1,0 +1,45 @@
+# data/ and .dagster/ are bind mounts, not named volumes: backup is `tar` on
+# the host, and seeding the VPS lake is `rsync` into ./data.
+services:
+  dagster-webserver:
+    build: .
+    command: dagster-webserver -m edgar_pipeline.definitions -h 0.0.0.0 -p 3000
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./.dagster:/app/.dagster
+    # Localhost-only: the Dagster UI is an admin surface, reached via
+    # `ssh -L 3000:localhost:3000 <vps>`, never the public internet.
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+
+  dagster-daemon:
+    build: .
+    command: dagster-daemon run -m edgar_pipeline.definitions
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./.dagster:/app/.dagster
+      - site:/app/dashboard/build
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - site:/srv/site:ro
+      - ./data:/srv/data:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+volumes:
+  site:
+  caddy-data:
+  caddy-config:

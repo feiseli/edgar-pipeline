@@ -1,4 +1,4 @@
-.PHONY: setup test lint smoke dev dbt
+.PHONY: setup test lint smoke dev dbt materialize
 
 # Bare `python` does not exist on stock macOS; override with PYTHON=... if needed
 PYTHON ?= python3
@@ -18,9 +18,14 @@ DATE ?= 2026-07-15
 smoke:
 	python -m edgar_pipeline.smoke $(DATE) --limit 25
 
-# Local Dagster UI at http://localhost:3000
+# Local Dagster UI at http://localhost:3000 (persistent run history in .dagster/)
 dev:
-	dagster dev -m edgar_pipeline.definitions
+	DAGSTER_HOME=$(CURDIR)/.dagster PYTHONPATH=src dagster dev -m edgar_pipeline.definitions
+
+# Materialize one partition end-to-end, e.g.: make materialize DATE=2026-07-18
+materialize:
+	DAGSTER_HOME=$(CURDIR)/.dagster PYTHONPATH=src dagster asset materialize \
+		--select '*' --partition $(DATE) -m edgar_pipeline.definitions
 
 # Build dbt models + tests against the Parquet lake (paths are relative to dbt/)
 dbt:

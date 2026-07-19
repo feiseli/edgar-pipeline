@@ -1,0 +1,5 @@
+# Persistent DAGSTER_HOME (run history, per-partition metadata for skip-rate
+# trending). Default SQLite storage lands in this directory; point DAGSTER_HOME
+# here — the Makefile and Docker image both do.
+telemetry:
+  enabled: false

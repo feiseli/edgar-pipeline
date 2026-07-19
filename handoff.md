@@ -49,11 +49,20 @@ Expect the lake to hold ~40–50% of daily index *rows*. Two structural reasons,
   `dagster asset materialize --select '*' --partition <YYYY-MM-DD> -m edgar_pipeline.definitions` with `PYTHONPATH=src` and `.env` sourced.
 - Dagster CLI runs don't persist run history (ephemeral `DAGSTER_HOME`), and per-partition metadata isn't retained — skip-rate trending in the Dagster UI needs a real `DAGSTER_HOME`, worth setting up before Phase B.
 
+## Done: Phase B build-out (2026-07-19) — verified locally, not yet on a VPS
+
+- **Throughput fixed**: the ~2 req/s was the sequential fetch loop being latency-bound (~250ms RTT), not the limiter. `form4_records` now fans out over a 6-worker thread pool sharing the (thread-safe) client+limiter; a full day re-materialized in 5m31s vs 13m52s (~8 req/s, at the configured cap). Row count and content identical — idempotency holds under concurrency.
+- **Persistent `DAGSTER_HOME`**: `.dagster/` (gitignored except `dagster.yaml`); `make dev` / `make materialize DATE=...` wire it in. Run history and per-partition skip-rate metadata now survive.
+- **Freshness endpoint**: `form4_parquet` writes `data/status.json` (partition, rows, skip rate); guarded so backfilling an older partition can't roll freshness backwards (regression-tested). Badge template in `deploy/README.md` reads it via shields dynamic-JSON.
+- **Docker stack**: one image (python + node, non-editable install — retires the editable-install quirk), compose services `dagster-webserver` (localhost-only, SSH tunnel — deliberately not public), `dagster-daemon`, `caddy` (auto-HTTPS, serves the Evidence build volume + `/status.json`). `data/` and `.dagster/` are bind mounts so backup/seed is plain tar/rsync.
+- **Nightly rebuild is a second Dagster schedule** (`dashboard_nightly`, 23:30 ET): dbt + Evidence build + healthchecks.io ping on success — one orchestrator, and the ping covers the whole chain. Verified end-to-end in the local compose stack: job green in-container, Caddy served the site and status.json over HTTPS.
+- **Backups**: `deploy/backup.sh` (tar lake + dagster home → B2 via rclone, rolling 35 days) with the cron line in its header.
+
 ## Next steps (in order)
 
-1. **Keep partitions fresh** — materialize the previous business day each morning, or start the Dagster schedule. After each: `make dbt` + `cd dashboard && npm run sources`.
-2. **Phase B (deployment)** per scope: Hetzner VPS, Docker Compose, Caddy, healthchecks.io, B2 backups, freshness badge. Before it: profile the 2 req/s throughput and set a persistent `DAGSTER_HOME`. The compose build step should run `dbt build` + `npm run sources` + `npm run build` and serve `dashboard/build/` statically.
-3. **README framing** (per Eli's stated goal): present storage decisions as choices with rejected alternatives — Parquet-on-disk + DuckDB vs Postgres, when object-storage-primary/Iceberg would win, immutable raw + dbt-layer amendment resolution, atomic partition overwrites. Object-storage-primary was explicitly considered and declined; don't reopen it. The filer-error guard (aggregate-in-price-field pattern) is a good README data-quality story.
+1. **Provision and deploy** — the manual checklist is `deploy/README.md`: Hetzner VPS, DNS, `.env`, healthchecks.io check, B2 bucket + rclone, `rsync` the lake up, `docker compose up -d --build`, enable both schedules in the UI, add the badge to the README. Then the five-business-day unattended soak (scope acceptance).
+2. **README framing** (per Eli's stated goal): present storage decisions as choices with rejected alternatives — Parquet-on-disk + DuckDB vs Postgres, when object-storage-primary/Iceberg would win, immutable raw + dbt-layer amendment resolution, atomic partition overwrites. Object-storage-primary was explicitly considered and declined; don't reopen it. The filer-error guard (aggregate-in-price-field pattern) is a good README data-quality story.
+3. **Frontend sharpening** during the soak week.
 
 ## Verification commands
 

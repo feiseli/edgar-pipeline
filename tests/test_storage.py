@@ -34,6 +34,8 @@ def test_write_and_query_roundtrip(tmp_path, monkeypatch):
 def test_form4_parquet_asset_accepts_flattened_rows(tmp_path, monkeypatch):
     # Regression: the asset once assumed upstream rows carried ISO date strings,
     # but the pickle IO manager delivers dt.date objects — flatten() output as-is.
+    import json
+
     from dagster import build_asset_context
 
     import edgar_pipeline.config as config
@@ -45,8 +47,21 @@ def test_form4_parquet_asset_accepts_flattened_rows(tmp_path, monkeypatch):
 
     rows = parse_form4(XML, "0000320193-26-000045").flatten()
     ctx = build_asset_context(partition_key="2026-07-15")
-    path = form4_parquet(ctx, rows)
+    records = {"rows": rows, "unparseable_filings": 1, "filings_attempted": 2}
+    path = form4_parquet(ctx, records)
     assert Path(path).exists()
+
+    # The freshness endpoint reflects this partition...
+    status = json.loads((tmp_path / "status.json").read_text())
+    assert status["partition"] == "2026-07-15"
+    assert status["rows"] == len(rows)
+    assert status["skip_rate"] == 0.5
+
+    # ...and an older backfilled partition must not roll it backwards.
+    ctx2 = build_asset_context(partition_key="2026-07-01")
+    form4_parquet(ctx2, {"rows": rows, "unparseable_filings": 0, "filings_attempted": 2})
+    status = json.loads((tmp_path / "status.json").read_text())
+    assert status["partition"] == "2026-07-15"
 
 
 def test_empty_partition_ok(tmp_path, monkeypatch):

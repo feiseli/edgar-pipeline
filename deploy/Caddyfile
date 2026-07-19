@@ -1,0 +1,17 @@
+# DOMAIN comes from compose (.env); "localhost" serves plain HTTP for local
+# testing, a real domain gets automatic HTTPS.
+{$DOMAIN:localhost} {
+	encode gzip
+
+	# Freshness endpoint written by the pipeline; the README badge reads it.
+	handle /status.json {
+		root * /srv/data
+		file_server
+	}
+
+	# The prerendered Evidence site.
+	handle {
+		root * /srv/site
+		file_server
+	}
+}
