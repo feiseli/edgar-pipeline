@@ -82,7 +82,7 @@ order by coalesce(bought, 0) + coalesce(sold, 0) desc
 All resolved Form 4 rows, most recent first. Codes: P/S open-market buy/sell,
 A grant, M option exercise, F tax withholding, G gift. Amended filings (4/A)
 supersede their originals. FIRST BUY marks an owner's first open-market
-purchase of this issuer in this dataset (which starts 2026-06-22).
+purchase of this issuer in this dataset (which starts 2024-07-22).
 
 </Details>
 

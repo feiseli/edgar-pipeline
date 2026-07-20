@@ -13,7 +13,7 @@ purchases and sales at market price, where an insider put their own money at
 stake. Grants, option exercises, gifts, and tax withholdings are excluded —
 they carry no price-sensitive signal.
 
-Value is shares × reported price. Data starts 2026-06-22 and updates each
+Value is shares × reported price. Data starts 2024-07-22 and updates each
 business day. Rows with implausible filer-entered values (e.g. aggregate
 proceeds typed into the per-share price field) are excluded by an automated
 guard.
@@ -92,7 +92,7 @@ order by transaction_date
 
 Largest individual open-market trades reported in the trailing 7 days.
 "First buy" marks an insider's first purchase of that issuer in this dataset
-(which starts 2026-06-22) — not necessarily their first ever.
+(which starts 2024-07-22) — not necessarily their first ever.
 
 ```sql notable
 select

@@ -20,7 +20,7 @@ group by owner_cik
 <Details title="What am I looking at?">
 
 Every Form 4 transaction this person has reported, across all issuers in this
-dataset (which starts 2026-06-22). "First buy" marks their first open-market
+dataset (which starts 2024-07-22). "First buy" marks their first open-market
 purchase of an issuer within the dataset — not necessarily their first ever.
 
 </Details>
