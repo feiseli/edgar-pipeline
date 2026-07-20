@@ -1,6 +1,40 @@
 # Handoff — edgar-pipeline
 
-*Updated 2026-07-19. Companion to `~/Desktop/Personal Projects/edgar-scope.md` (the scope doc); this file tracks where work actually stands.*
+*Updated 2026-07-20. Companion to `~/Desktop/Personal Projects/edgar-scope.md` (the scope doc); this file tracks where work actually stands.*
+
+## Done: S&P 500 bucket live + 2-year backfill running (2026-07-20)
+
+Spec/plan in `docs/superpowers/` (`2026-07-20-sp500-and-backfill-*`). All merged to main, deployed to the VPS.
+
+- **S&P 500 ingest**: `sp500.py` (FRED CSV — Stooq now gates its CSV behind an
+  anti-bot challenge we don't circumvent; spec amended), unpartitioned
+  `sp500_parquet` asset, `sp500_daily_schedule` 23:00 ET RUNNING on the VPS,
+  bucket seeded (`data/sp500/sp500.parquet`, ~2,500 rows). `form4_daily`
+  selection narrowed to `'*form4_parquet'` so the partitioned job doesn't
+  swallow the unpartitioned asset.
+- **dbt**: `stg_sp500` view (date, close, daily_return) + 3 schema tests → 19
+  objects green. **pytest**: 19 green (+4 sp500, +1 definitions). CI ruff
+  clean after a wrap/format fix.
+- **Dashboard**: S&P close overlaid on the overview daily-flow chart (y2 line,
+  neutral gray `#8b949e` — blue/orange categorical pair untouched). Explainer
+  lake-start text moved to 2024-07-22 in all 5 pages + dbt description.
+  Verified via `dashboard_nightly` run on the VPS (green, 1m41s).
+- **Backfill**: `deploy/backfill.sh` running on the VPS since ~07:39 UTC,
+  range 2024-07-22 → 2026-06-20, oldest-first, resumable (skips partitions on
+  disk), sleeps through the 22:15–23:45 ET ingest window. Started under
+  `nohup` (pid 745809, log `/opt/edgar-pipeline/backfill.log`) — **not tmux**:
+  tmux isn't installed on the VPS and this session had no sudo password.
+  `apt install tmux` next time root access is handy; restarting the script
+  inside tmux later is safe by construction. Expected duration ~2 days.
+- **Monitoring**: `ssh edgar 'tail -5 /opt/edgar-pipeline/backfill.log'`,
+  `ls /opt/edgar-pipeline/data/form4 | wc -l` (target ≈ 525),
+  `grep -ci unparseable backfill.log` for skip-rate drift (capture logged
+  accessions as fixtures on a spike).
+- **Soak clock restarts after the backfill completes** (~Wed): the
+  5-business-day unattended soak validates the end state (deep history + S&P
+  job). Watch the first post-backfill nightly Evidence build for memory
+  growth (~10× pages; swap is in place, `NODE_OPTIONS=--max-old-space-size`
+  is the next lever).
 
 ## Where things stand
 
@@ -91,7 +125,7 @@ long-press reload → "Empty Cache and Hard Reload" is the only reliable purge.
 
 ## Next steps (in order)
 
-1. **Five-business-day unattended soak** (scope acceptance) — starts Mon 2026-07-20. Watch: badge date advances daily, healthchecks stays green, `docker compose ps` clean. Also kill the daemon once mid-week to confirm healthchecks alerts (acceptance item).
+1. **Five-business-day unattended soak** (scope acceptance) — starts after the backfill completes (~Wed 2026-07-22). Watch: badge date advances daily, healthchecks stays green, `docker compose ps` clean. Also kill the daemon once mid-week to confirm healthchecks alerts (acceptance item).
 2. **Human visual pass** (never done — no browser access from the CLI session): live site on desktop + ~390px mobile; confirm terminal theme, monospace BigValues, favicon in tab, delta chips acceptable, tables scroll not overflow. Eli started clicking around 07-19 evening; nothing flagged beyond the (fixed) cache issue.
 3. **README framing** (per Eli's stated goal): present storage decisions as choices with rejected alternatives — Parquet-on-disk + DuckDB vs Postgres, when object-storage-primary/Iceberg would win, immutable raw + dbt-layer amendment resolution, atomic partition overwrites. Object-storage-primary was explicitly considered and declined; don't reopen it. The filer-error guard (aggregate-in-price-field pattern) is a good README data-quality story. The cache-header incident + frontend build-out are also good stories.
 4. **Optional, parked**: all-issuers index page (makes the static crawl exhaustive — currently 61 issuers/317 owners, only link-discovered pages prerender); custom Svelte components (tabled by Eli — revisit only if the theme reads too cliché); site-volume cruft from old hashed parquet dirs accumulates per deploy (harmless, worth a cleanup step in the nightly job someday).
