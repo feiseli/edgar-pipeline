@@ -49,6 +49,16 @@ def test_flatten_grain(filing):
     assert all(r["issuer_name"] == "Apple Inc." for r in rows)
 
 
+def test_tz_suffix_dates_parse():
+    # Real filing captured from the 2024 backfill: one filing agent (CIK
+    # 0001477932) emits dates as "2024-07-19-05:00" — ISO date + UTC offset.
+    # 55 filings were skipped for this before the fix.
+    xml = (Path(__file__).parent / "fixtures" / "form4_tz_suffix_date.xml").read_bytes()
+    filing = parse_form4(xml, "0001477932-24-004351")
+    assert filing.period_of_report == dt.date(2024, 7, 19)
+    assert filing.transactions[0].transaction_date == dt.date(2024, 7, 19)
+
+
 def test_rejects_non_ownership_xml():
     with pytest.raises(ValueError, match="ownershipDocument"):
         parse_form4(b"<html><body>viewer page</body></html>", ACC)

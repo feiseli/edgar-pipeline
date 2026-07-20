@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<ownershipDocument>
+
+    <schemaVersion>X0508</schemaVersion>
+
+    <documentType>4</documentType>
+
+    <periodOfReport>2024-07-19-05:00</periodOfReport>
+
+    <notSubjectToSection16>false</notSubjectToSection16>
+
+    <issuer>
+        <issuerCik>0001590715</issuerCik>
+        <issuerName>American Resources Corp</issuerName>
+        <issuerTradingSymbol>AREC</issuerTradingSymbol>
+    </issuer>
+
+    <reportingOwner>
+        <reportingOwnerId>
+            <rptOwnerCik>0001662466</rptOwnerCik>
+            <rptOwnerName>GOLDEN PROPERTIES LTD.</rptOwnerName>
+        </reportingOwnerId>
+        <reportingOwnerAddress>
+            <rptOwnerStreet1>#500</rptOwnerStreet1>
+            <rptOwnerStreet2>1177 WEST HASTINGS STREET</rptOwnerStreet2>
+            <rptOwnerCity>VANCOUVER</rptOwnerCity>
+            <rptOwnerState>A1</rptOwnerState>
+            <rptOwnerZipCode>V6E 2K3</rptOwnerZipCode>
+            <rptOwnerStateDescription>BRITISH COLUMBIA, CANADA</rptOwnerStateDescription>
+        </reportingOwnerAddress>
+        <reportingOwnerRelationship>
+            <isDirector>false</isDirector>
+            <isOfficer>false</isOfficer>
+            <isTenPercentOwner>true</isTenPercentOwner>
+            <isOther>false</isOther>
+        </reportingOwnerRelationship>
+    </reportingOwner>
+
+    <aff10b5One>false</aff10b5One>
+
+    <nonDerivativeTable>
+        <nonDerivativeTransaction>
+            <securityTitle>
+                <value>Class A Common Stock</value>
+            </securityTitle>
+            <transactionDate>
+                <value>2024-07-19-05:00</value>
+            </transactionDate>
+            <deemedExecutionDate></deemedExecutionDate>
+            <transactionCoding>
+                <transactionFormType>4</transactionFormType>
+                <transactionCode>P</transactionCode>
+                <equitySwapInvolved>false</equitySwapInvolved>
+            </transactionCoding>
+            <transactionAmounts>
+                <transactionShares>
+                    <value>800000</value>
+                </transactionShares>
+                <transactionPricePerShare>
+                    <value>0.67</value>
+                </transactionPricePerShare>
+                <transactionAcquiredDisposedCode>
+                    <value>D</value>
+                </transactionAcquiredDisposedCode>
+            </transactionAmounts>
+            <postTransactionAmounts>
+                <sharesOwnedFollowingTransaction>
+                    <value>14389960</value>
+                </sharesOwnedFollowingTransaction>
+            </postTransactionAmounts>
+            <ownershipNature>
+                <directOrIndirectOwnership>
+                    <value>D</value>
+                </directOrIndirectOwnership>
+            </ownershipNature>
+        </nonDerivativeTransaction>
+    </nonDerivativeTable>
+
+    <remarks></remarks>
+
+    <ownerSignature>
+        <signatureName>/s/ Alex Lau</signatureName>
+        <signatureDate>2024-07-19-05:00</signatureDate>
+    </ownerSignature>
+</ownershipDocument>

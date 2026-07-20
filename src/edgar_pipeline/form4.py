@@ -41,7 +41,9 @@ def _flag(node: ET.Element | None) -> bool:
 def _date(raw: str | None) -> dt.date:
     if raw is None:
         raise ValueError("missing required date")
-    return dt.date.fromisoformat(raw)
+    # Some filing agents append a UTC offset ("2024-07-19-05:00"); an ISO
+    # date is always the first 10 characters.
+    return dt.date.fromisoformat(raw[:10])
 
 
 def parse_form4(xml_bytes: bytes, accession_number: str) -> Form4Filing:
