@@ -118,9 +118,7 @@ def sp500_parquet(context: AssetExecutionContext) -> str:
     """S&P 500 daily closes from FRED, atomically rewritten each refresh."""
     rows = fetch_sp500()
     path = write_sp500(rows)
-    context.add_output_metadata(
-        {"rows": len(rows), "through": rows[-1]["date"].isoformat()}
-    )
+    context.add_output_metadata({"rows": len(rows), "through": rows[-1]["date"].isoformat()})
     return str(path)
 
 
