@@ -13,6 +13,8 @@ tmp*/
 .dagster/*
 !.dagster/dagster.yaml
 dbt/profiles.yml
+dbt-notes.md
+.DS_Store
 dbt/.user.yml
 .tmp_dagster_home_*/
 .superpowers/
