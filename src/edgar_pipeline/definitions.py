@@ -112,7 +112,7 @@ def form4_parquet(context: AssetExecutionContext, form4_records: dict) -> str:
 
 @asset
 def sp500_parquet(context: AssetExecutionContext) -> str:
-    """Full ^SPX daily history from Stooq, atomically rewritten each refresh."""
+    """S&P 500 daily closes from FRED, atomically rewritten each refresh."""
     rows = fetch_sp500()
     path = write_sp500(rows)
     context.add_output_metadata(
