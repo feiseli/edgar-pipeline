@@ -7,7 +7,10 @@ Asset graph, per filed-date partition:
 Weekends and market holidays materialize as empty partitions (EDGAR has no
 index for them), which keeps the partition set dense and backfills trivial:
 
-    dagster asset materialize --select '*' --partition 2026-07-16
+    dagster asset materialize --select '*form4_parquet' --partition 2026-07-16
+
+('*form4_parquet' is that asset plus its ancestors. Plain '*' would also
+sweep in the unpartitioned sp500_parquet, which takes no --partition.)
 
 Note: no `from __future__ import annotations` here — Dagster validates the
 context parameter's annotation by identity, and stringified annotations fail.

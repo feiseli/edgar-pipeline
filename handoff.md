@@ -46,7 +46,7 @@ Expect the lake to hold ~40–50% of daily index *rows*. Two structural reasons,
 - The macOS editable install intermittently loses the package. Workaround baked into scripts: `PYTHONPATH=src` (or reinstall: `pip install -e ".[dev]" --force-reinstall --no-deps`). Docker deploy retires this.
 - Long local runs: launch under `caffeinate -is` — an overnight run was killed by laptop sleep.
 - Backfill script pattern (resumable, skips partitions already on disk) is in the session scratchpad; the core loop is just:
-  `dagster asset materialize --select '*' --partition <YYYY-MM-DD> -m edgar_pipeline.definitions` with `PYTHONPATH=src` and `.env` sourced.
+  `dagster asset materialize --select '*form4_parquet' --partition <YYYY-MM-DD> -m edgar_pipeline.definitions` with `PYTHONPATH=src` and `.env` sourced. (Plain `'*'` would also select the unpartitioned `sp500_parquet`, which takes no `--partition`.)
 - Dagster CLI runs don't persist run history (ephemeral `DAGSTER_HOME`), and per-partition metadata isn't retained — skip-rate trending in the Dagster UI needs a real `DAGSTER_HOME`, worth setting up before Phase B.
 
 ## Done: Phase B build-out (2026-07-19) — verified locally, not yet on a VPS
