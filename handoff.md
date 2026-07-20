@@ -26,6 +26,16 @@ Spec/plan in `docs/superpowers/` (`2026-07-20-sp500-and-backfill-*`). All merged
   tmux isn't installed on the VPS and this session had no sudo password.
   `apt install tmux` next time root access is handy; restarting the script
   inside tmux later is safe by construction. Expected duration ~2 days.
+- **Drift caught and fixed mid-backfill (2026-07-20, ~11:00 UTC)**: 55 filings
+  skipped in the first ~45 partitions, 100% from one filing agent (CIK
+  0001477932) that emits dates as `2024-07-19-05:00` (ISO date + UTC offset).
+  Fix: `_date` in `form4.py` truncates to the first 10 chars (`bfa76bc`);
+  real filing captured as `tests/fixtures/form4_tz_suffix_date.xml` per the
+  drift workflow (20 pytest green). The 15 affected partitions were deleted
+  and the backfill restarted — it redid them first (verified: redone
+  2024-07-24 has zero skips and carries the once-skipped accession), then
+  continues forward. Partition files are root-owned (container writes them);
+  delete via `docker compose exec`, not from the host shell.
 - **Monitoring**: `ssh edgar 'tail -5 /opt/edgar-pipeline/backfill.log'`,
   `ls /opt/edgar-pipeline/data/form4 | wc -l` (target ≈ 525),
   `grep -ci unparseable backfill.log` for skip-rate drift (capture logged
