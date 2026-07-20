@@ -33,5 +33,12 @@ models:
       - name: is_first_buy
         description: >
           True iff this is a code-P transaction on the owner's earliest P date
-          for this issuer within the lake (starts 2026-06-22). Not "first ever".
+          for this issuer within the lake (starts 2024-07-22). Not "first ever".
+        tests: [not_null]
+  - name: stg_sp500
+    description: Daily S&P 500 index close from FRED; full-history snapshot.
+    columns:
+      - name: date
+        tests: [not_null, unique]
+      - name: close
         tests: [not_null]

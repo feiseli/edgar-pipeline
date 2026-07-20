@@ -11,7 +11,7 @@ noise; several buying at once rarely is.
 A cluster is two or more distinct insiders making open-market purchases
 (code P) of the same issuer inside the window. "First buys" counts how many
 of those purchases were the buyer's first for that issuer in this dataset
-(which starts 2026-06-22). Clusters totaling under $100k are hidden as noise.
+(which starts 2024-07-22). Clusters totaling under $100k are hidden as noise.
 
 </Details>
 

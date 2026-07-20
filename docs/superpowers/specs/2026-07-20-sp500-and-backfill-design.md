@@ -14,10 +14,18 @@ partitions).
 - **Index price levels**, not constituent membership. Membership tagging (the
   README-roadmap "S&P 500 issuer enrichment") stays parked; it can be a second
   small bucket later.
-- **Source: Stooq daily CSV** (`https://stooq.com/q/d/l/?s=^spx&i=d`) — full
-  daily history, one keyless HTTP GET, stdlib `csv` parse, zero new
-  dependencies. Rejected: yfinance (new dependency, unofficial API), FRED
-  (10-year history cap, no other advantage).
+- **Source: FRED daily CSV** (`https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500`)
+  — one keyless HTTP GET, stdlib `csv` parse, zero new dependencies. Close
+  prices only, 10 years of history (an S&P licensing limit); both are
+  immaterial here — only the close is charted and the Form 4 lake is
+  shallower. Market holidays arrive as `.` and are skipped.
+  **Amended 2026-07-20 during implementation:** Stooq was the original choice
+  and is now unusable — it gates its CSV behind a JavaScript proof-of-work
+  anti-bot challenge (verified against default and browser user-agents).
+  Circumventing it would contradict this project's stated policy of not
+  scraping access-controlled endpoints, so the source moved to FRED. FRED had
+  been rejected only for its 10-year cap, which does not bind a 2-year lake.
+  Also rejected: yfinance (new dependency, unofficial API).
 - **Comparison surfaces as an overlay** on the existing overview daily buy/sell
   chart (second y-axis line), not a separate page. Smallest change that makes
   the comparison visible.
@@ -32,10 +40,11 @@ partitions).
 
 New unpartitioned Dagster asset `sp500_parquet` in `definitions.py`:
 
-- Fetch full daily ^SPX history from Stooq (plain `httpx`, not `EdgarClient` —
+- Fetch the daily S&P 500 series from FRED (plain `httpx`, not `EdgarClient` —
   this is not an EDGAR endpoint and needs no SEC headers/limiter; simple
   timeout + `raise_for_status`).
-- Parse with stdlib `csv` → rows of `(date, open, high, low, close, volume)`.
+- Parse with stdlib `csv` → rows of `(date, close)`, skipping holiday `.`
+  values.
 - Write `data/sp500/sp500.parquet` atomically (write temp, `os.replace`) —
   full-file overwrite each run, idempotent by construction, no incremental
   bookkeeping. Sanity guard: refuse to overwrite if the fetched history is

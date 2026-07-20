@@ -7,7 +7,10 @@ Asset graph, per filed-date partition:
 Weekends and market holidays materialize as empty partitions (EDGAR has no
 index for them), which keeps the partition set dense and backfills trivial:
 
-    dagster asset materialize --select '*' --partition 2026-07-16
+    dagster asset materialize --select '*form4_parquet' --partition 2026-07-16
+
+('*form4_parquet' is that asset plus its ancestors. Plain '*' would also
+sweep in the unpartitioned sp500_parquet, which takes no --partition.)
 
 Note: no `from __future__ import annotations` here — Dagster validates the
 context parameter's annotation by identity, and stringified annotations fail.
@@ -37,9 +40,10 @@ from .daily_index import fetch_form4_entries
 from .form4 import fetch_form4
 from .http import EdgarClient
 from .models import IndexEntry
+from .sp500 import fetch_sp500, write_sp500
 from .storage import write_partition
 
-daily = DailyPartitionsDefinition(start_date="2026-06-22", timezone="US/Eastern")
+daily = DailyPartitionsDefinition(start_date="2024-07-22", timezone="US/Eastern")
 
 
 @asset(partitions_def=daily)
@@ -109,6 +113,17 @@ def form4_parquet(context: AssetExecutionContext, form4_records: dict) -> str:
     return str(path)
 
 
+@asset
+def sp500_parquet(context: AssetExecutionContext) -> str:
+    """S&P 500 daily closes from FRED, atomically rewritten each refresh."""
+    rows = fetch_sp500()
+    path = write_sp500(rows)
+    context.add_output_metadata(
+        {"rows": len(rows), "through": rows[-1]["date"].isoformat()}
+    )
+    return str(path)
+
+
 @op
 def rebuild_dashboard(context) -> None:
     """dbt build + Evidence static rebuild; pings healthchecks.io on success.
@@ -134,7 +149,8 @@ def dashboard_nightly():
     rebuild_dashboard()
 
 
-form4_job = define_asset_job("form4_daily", selection="*")
+form4_job = define_asset_job("form4_daily", selection="*form4_parquet")
+sp500_job = define_asset_job("sp500_daily", selection="sp500_parquet")
 
 # 22:30 US/Eastern: EDGAR's daily index is complete well after the 22:00 ET
 # filing deadline for the day. The dashboard rebuild follows at 23:30 — the
@@ -146,6 +162,14 @@ form4_schedule = ScheduleDefinition(
     execution_timezone="US/Eastern",
 )
 
+# 23:00 ET: after the 22:30 Form 4 ingest, before the 23:30 dashboard rebuild,
+# so the nightly dashboard picks up same-day closes.
+sp500_schedule = ScheduleDefinition(
+    job=sp500_job,
+    cron_schedule="0 23 * * 1-5",
+    execution_timezone="US/Eastern",
+)
+
 dashboard_schedule = ScheduleDefinition(
     job=dashboard_nightly,
     cron_schedule="30 23 * * 1-5",
@@ -153,7 +177,7 @@ dashboard_schedule = ScheduleDefinition(
 )
 
 defs = Definitions(
-    assets=[form4_index_entries, form4_records, form4_parquet],
+    assets=[form4_index_entries, form4_records, form4_parquet, sp500_parquet],
     jobs=[dashboard_nightly],
-    schedules=[form4_schedule, dashboard_schedule],
+    schedules=[form4_schedule, sp500_schedule, dashboard_schedule],
 )
