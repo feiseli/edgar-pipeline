@@ -28,11 +28,13 @@ from dagster import (
     AssetExecutionContext,
     DailyPartitionsDefinition,
     Definitions,
+    RunRequest,
     ScheduleDefinition,
     asset,
     define_asset_job,
     job,
     op,
+    schedule,
 )
 
 from . import config
@@ -43,7 +45,9 @@ from .models import IndexEntry
 from .sp500 import fetch_sp500, write_sp500
 from .storage import write_partition
 
-daily = DailyPartitionsDefinition(start_date="2024-07-22", timezone="US/Eastern")
+# end_offset=1: the current (incomplete) day is a valid partition — the 22:30
+# ET schedule ingests same-day filings, which requires today to exist.
+daily = DailyPartitionsDefinition(start_date="2024-07-22", timezone="US/Eastern", end_offset=1)
 
 
 @asset(partitions_def=daily)
@@ -137,7 +141,12 @@ def rebuild_dashboard(context) -> None:
         ("evidence build", ["npm", "run", "build"], root / "dashboard"),
     ]:
         context.log.info(desc)
-        subprocess.run(cmd, cwd=cwd, check=True)
+        # Cap node's heap so the Evidence build GCs instead of growing into
+        # the OOM killer (exit 137 on the 4GB box, first hit 2026-07-21 at
+        # ~140 partitions). If the cap stops sufficing as the lake grows,
+        # the next lever is capping prerendered pages to recent activity.
+        env = {**os.environ, "NODE_OPTIONS": "--max-old-space-size=3072"}
+        subprocess.run(cmd, cwd=cwd, check=True, env=env)
     if ping := os.environ.get("HEALTHCHECKS_URL"):
         httpx.get(ping, timeout=10)
 
@@ -150,15 +159,18 @@ def dashboard_nightly():
 form4_job = define_asset_job("form4_daily", selection="*form4_parquet")
 sp500_job = define_asset_job("sp500_daily", selection="sp500_parquet")
 
+
 # 22:30 US/Eastern: EDGAR's daily index is complete well after the 22:00 ET
 # filing deadline for the day. The dashboard rebuild follows at 23:30 — the
 # ingest takes minutes, and the healthchecks ping at its end covers the whole
 # chain (no ping fires if either stage died).
-form4_schedule = ScheduleDefinition(
-    job=form4_job,
-    cron_schedule="30 22 * * 1-5",
-    execution_timezone="US/Eastern",
-)
+# A plain ScheduleDefinition on a partitioned asset job launches a
+# partition-less run, which form4_index_entries can't execute — the tick must
+# request the same-day partition explicitly.
+@schedule(job=form4_job, cron_schedule="30 22 * * 1-5", execution_timezone="US/Eastern")
+def form4_daily_schedule(context):
+    return RunRequest(partition_key=context.scheduled_execution_time.date().isoformat())
+
 
 # 23:00 ET: after the 22:30 Form 4 ingest, before the 23:30 dashboard rebuild,
 # so the nightly dashboard picks up same-day closes.
@@ -177,5 +189,5 @@ dashboard_schedule = ScheduleDefinition(
 defs = Definitions(
     assets=[form4_index_entries, form4_records, form4_parquet, sp500_parquet],
     jobs=[dashboard_nightly],
-    schedules=[form4_schedule, sp500_schedule, dashboard_schedule],
+    schedules=[form4_daily_schedule, sp500_schedule, dashboard_schedule],
 )
