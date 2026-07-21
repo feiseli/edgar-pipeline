@@ -106,3 +106,49 @@ def test_fetch_form4_empty_body_is_skip():
         file_name="edgar/data/320193/0000320193-26-000045.txt",
     )
     assert fetch_form4(StubClient(), entry) is None
+
+
+def _entry():
+    from edgar_pipeline.models import IndexEntry
+
+    return IndexEntry(
+        form_type="4",
+        company_name="DOE JANE",
+        cik=1030894,
+        date_filed=dt.date(2025, 1, 2),
+        file_name="edgar/data/1030894/0000950170-25-000398.txt",
+    )
+
+
+def _http_error(status):
+    import httpx
+
+    req = httpx.Request("GET", "https://www.sec.gov/x/index.json")
+    return httpx.HTTPStatusError(
+        f"{status}", request=req, response=httpx.Response(status, request=req)
+    )
+
+
+def test_fetch_form4_removed_filing_404_is_skip():
+    # Observed live during the 2-year backfill (2025-01-02 index): a filing
+    # withdrawn from EDGAR after being indexed — its whole directory 404s.
+    from edgar_pipeline.form4 import fetch_form4
+
+    class Gone404Client:
+        def get(self, url):
+            raise _http_error(404)
+
+    assert fetch_form4(Gone404Client(), _entry()) is None
+
+
+def test_fetch_form4_server_error_still_raises():
+    import httpx
+
+    from edgar_pipeline.form4 import fetch_form4
+
+    class Broken500Client:
+        def get(self, url):
+            raise _http_error(500)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        fetch_form4(Broken500Client(), _entry())

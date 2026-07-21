@@ -15,6 +15,8 @@ from __future__ import annotations
 import datetime as dt
 import xml.etree.ElementTree as ET
 
+import httpx
+
 from .config import EDGAR_BASE
 from .http import EdgarClient
 from .models import Form4Filing, Form4Transaction, IndexEntry
@@ -123,11 +125,19 @@ def fetch_form4(client: EdgarClient, entry: IndexEntry) -> Form4Filing | None:
     not errors.
     """
     dir_url = f"{EDGAR_BASE}{entry.filing_dir_url}"
-    index = client.get(f"{dir_url}/index.json").json()
-    name = find_ownership_xml(index)
-    if name is None:
-        return None
-    xml_bytes = client.get(f"{dir_url}/{name}").content
+    try:
+        index = client.get(f"{dir_url}/index.json").json()
+        name = find_ownership_xml(index)
+        if name is None:
+            return None
+        xml_bytes = client.get(f"{dir_url}/{name}").content
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            # Filing withdrawn from EDGAR after being indexed — the whole
+            # directory 404s (observed live in the 2025-01-02 index). Gone
+            # is a skip; other HTTP errors still fail the partition.
+            return None
+        raise
     try:
         return parse_form4(xml_bytes, entry.accession_number)
     except (ValueError, ET.ParseError):
