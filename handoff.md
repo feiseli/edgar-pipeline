@@ -1,6 +1,47 @@
 # Handoff — edgar-pipeline
 
-*Updated 2026-07-20. Companion to `~/Desktop/Personal Projects/edgar-scope.md` (the scope doc); this file tracks where work actually stands.*
+*Updated 2026-07-21. Companion to `~/Desktop/Personal Projects/edgar-scope.md` (the scope doc); this file tracks where work actually stands.*
+
+## Incident night 2026-07-20→21: three failures, three fixes (all deployed)
+
+Every scheduled job that ran on new ground that night failed; all diagnosed
+and fixed by ~10:15 UTC Jul 21. sp500_daily was the only green run (bucket
+refreshed 03:00 UTC ✓ — its schedule works).
+
+1. **form4_daily failed its first-ever real tick** ("Cannot access
+   partition_key for a non-partitioned run"). A plain `ScheduleDefinition` on
+   a partitioned asset job launches a partition-less run — and this schedule
+   had never actually ticked before: every partition to date came from CLI
+   materializations (laptop backfills, rsync-seeded to the VPS), and the VPS
+   schedule was enabled on a Saturday, so Monday was its maiden run. Fix
+   (`c4370b2`): `@schedule` fn returning
+   `RunRequest(partition_key=<tick-day>)`, **plus `end_offset=1`** on the
+   partitions def — at 22:30 ET the same-day partition must already exist to
+   be requestable (Dagster daily partitions otherwise exist only after
+   midnight). Regression test evaluates a real tick. Missed partition
+   2026-07-20 materialized manually (1,089 rows, 0 skips); status.json
+   current again.
+2. **The backfill died at 2025-01-02, 18:11 UTC**: a filing withdrawn from
+   EDGAR after being indexed — its whole directory 404s
+   (`0000950170-25-000398`, CIK 1030894) — and the uncaught `HTTPStatusError`
+   failed the partition; `set -e` ended the script. Same species as the
+   removed-FINS-filing precedent. Fix (`be84660`): directory 404 in
+   `fetch_form4` → skip (logged), other HTTP errors still raise. Backfill
+   restarted ~10:05 UTC Jul 21 from 2025-01-02 (138 partitions were on disk,
+   position preserved).
+3. **dashboard_nightly OOM-killed** (npm exit 137 after ~1h; the predicted
+   Evidence-build memory risk, hit at ~140 partitions on the 4GB box). The
+   site kept serving the last good build — visitors saw stale-but-valid data.
+   Mitigation (same commit as 1): `NODE_OPTIONS=--max-old-space-size=3072` on
+   the rebuild subprocesses so node GCs instead of ballooning. **Unverified
+   as of writing** — tonight's 23:30 ET run is the test (it starts inside the
+   backfill's 22:15–23:45 sleep window). If it still dies, next lever per
+   spec: cap prerendered pages to recent activity.
+
+Ops notes learned: launch the backfill with `setsid nohup ... &` (a plain
+`nohup ... &` inside an ssh one-liner holds the session open); `pkill -f
+backfill.sh` from an ssh one-liner kills the ssh session itself (the pattern
+matches its own command line) — use `pgrep -f "deploy/backfill[.]sh"`.
 
 ## Done: S&P 500 bucket live + 2-year backfill running (2026-07-20)
 
